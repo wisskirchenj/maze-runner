@@ -1,6 +1,7 @@
 package de.cofinpro.maze.view;
 
 import de.cofinpro.maze.model.Maze;
+import de.cofinpro.maze.model.Position;
 
 import java.util.Map;
 
@@ -9,7 +10,7 @@ import java.util.Map;
  */
 public class MazeView {
 
-    private static final Map<Maze.Element, String> DISPlAY_MAP = Map.of(
+    private static final Map<Maze.Element, String> DISPLAY_MAP = Map.of(
             Maze.Element.PATH, "  ",
             Maze.Element.WALL, "██"
     );
@@ -24,9 +25,9 @@ public class MazeView {
      */
     public String display() {
         var stringBuilder = new StringBuilder();
-        for (int row = 0; row < maze.getDimension(); row++) {
-            for (int col = 0; col < maze.getDimension(); col++) {
-                stringBuilder.append(DISPlAY_MAP.get(maze.atPosition(row, col)));
+        for (int row = 0; row < maze.getRows(); row++) {
+            for (int col = 0; col < maze.getCols(); col++) {
+                stringBuilder.append(DISPLAY_MAP.get(maze.atPosition(new Position(row, col))));
             }
             stringBuilder.append("\n");
         }
