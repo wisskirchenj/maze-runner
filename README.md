@@ -19,9 +19,7 @@ The application will simulate a maze, display it using text graphics and use som
 
 ## Project status
 
-Project is ongoing.
-
-[//]: # (Project was completed on 14.05.23.)
+Project was completed on 30.07.23.
 
 ## Repository Contents
 
@@ -37,3 +35,6 @@ display. Use with a fixed maze definition.
 24.07.23 Stage 2 completed. Generate a random maze using Prim algorithm.
 
 25.07.23 Stage 3 completed. Main menu added to generate, save, load and display mazes.
+
+30.07.23 Final Stage 4 completed. Added solving functionality to find an escape through the maze. Own algorithm
+invented and implemented.
