@@ -25,6 +25,7 @@ public class MainMenuController implements Runnable {
             2. Load a maze
             3. Save the maze
             4. Display the maze
+            5. Find the escape
             0. Exit""";
     private static final Map<ApplicationState, String> MENU = Map.of(
             ApplicationState.INITIAL, MENU_START_TEXT,
@@ -65,7 +66,8 @@ public class MainMenuController implements Runnable {
                 Choice.GENERATE, this::generateMaze,
                 Choice.LOAD, this::loadMaze,
                 Choice.SAVE, this::saveMaze,
-                Choice.DISPLAY, this::displayMaze
+                Choice.DISPLAY, this::displayMaze,
+                Choice.SOLVE, this::solveMaze
         ).get(choice);
     }
 
@@ -97,9 +99,16 @@ public class MainMenuController implements Runnable {
         applicationState = ApplicationState.WITH_MAZE;
     }
 
+    private void solveMaze() {
+        if (!maze.isSolved()) {
+            maze.solve();
+        }
+        displayMaze();
+    }
+
     private Choice getMenuChoice() {
         printer.printInfo(MENU.get(applicationState));
-        var menuOptionsRegex = applicationState == ApplicationState.INITIAL ? "[0-2]" : "[0-4]";
+        var menuOptionsRegex = applicationState == ApplicationState.INITIAL ? "[0-2]" : "[0-5]";
         var menuIndex = scanIntegerValidated(menuOptionsRegex, () ->
                 printer.printInfo("Incorrect option. Please try again"));
         return Choice.values()[menuIndex];
@@ -115,7 +124,7 @@ public class MainMenuController implements Runnable {
     }
 
     private enum Choice {
-        QUIT, GENERATE, LOAD, SAVE, DISPLAY
+        QUIT, GENERATE, LOAD, SAVE, DISPLAY, SOLVE
     }
 
     private enum ApplicationState {

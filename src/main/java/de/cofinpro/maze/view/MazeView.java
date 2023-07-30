@@ -12,7 +12,9 @@ public class MazeView {
 
     private static final Map<Maze.Element, String> DISPLAY_MAP = Map.of(
             Maze.Element.PATH, "  ",
-            Maze.Element.WALL, "██"
+            Maze.Element.WALL, "██",
+            Maze.Element.TRAVERSE, "//",
+            Maze.Element.VISITED, "  "
     );
     private final Maze maze;
 

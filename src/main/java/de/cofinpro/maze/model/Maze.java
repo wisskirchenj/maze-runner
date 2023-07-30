@@ -1,22 +1,30 @@
 package de.cofinpro.maze.model;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 import static de.cofinpro.maze.model.Maze.Element.PATH;
+import static de.cofinpro.maze.model.Maze.Element.TRAVERSE;
+import static de.cofinpro.maze.model.Maze.Element.VISITED;
 import static de.cofinpro.maze.model.Maze.Element.WALL;
+import static java.util.function.Predicate.not;
 
 /**
  * model class representing the 2-dim maze.
  */
 @Getter
+@Slf4j
 public class Maze implements Serializable {
 
     @Serial
@@ -25,6 +33,7 @@ public class Maze implements Serializable {
     private static final Random RANDOM = new Random();
     private final int rows;
     private final int cols;
+    private boolean solved = false;
 
     private final Element[][] elements;
 
@@ -40,7 +49,11 @@ public class Maze implements Serializable {
     }
 
     public Element atPosition(Position pos) {
-        return elements[pos.row()][pos.col()];
+        return atPosition(pos.row(), pos.col());
+    }
+
+    private Element atPosition(int row, int col) {
+        return elements[row][col];
     }
 
     public Maze generate() {
@@ -60,7 +73,7 @@ public class Maze implements Serializable {
     private void setToPath(Position pos, boolean connect) {
         elements[pos.row()][pos.col()] = PATH;
         if (connect) {
-            var candidates = validNeighboursOf(pos)
+            var candidates = validNeighboursOf(pos, 2)
                     .stream().filter(p -> atPosition(p) == PATH).toList();
             var with = candidates.get(RANDOM.nextInt(candidates.size()));
             setToPath(new Position((pos.row() + with.row()) / 2, (pos.col() + with.col()) / 2), false);
@@ -68,29 +81,33 @@ public class Maze implements Serializable {
     }
 
     private void applyPrimAlgorithm(Position seed) {
-        List<Position> openGridPositions = new ArrayList<>(validNeighboursOf(seed));
+        List<Position> openGridPositions = new ArrayList<>(validNeighboursOf(seed, 2));
+        Set<Position> gridAdded = new HashSet<>(openGridPositions);
         while (!openGridPositions.isEmpty()) {
             var nextPath = openGridPositions.remove(RANDOM.nextInt(openGridPositions.size()));
             setToPath(nextPath, true);
-            openGridPositions.addAll(
-                    validNeighboursOf(nextPath).stream().filter(pos -> atPosition(pos) != PATH).toList()
-            );
+            var gridPositions = validNeighboursOf(nextPath, 2).stream()
+                    .filter(pos -> atPosition(pos) != PATH)
+                    .filter(not(gridAdded::contains))
+                    .toList();
+            openGridPositions.addAll(gridPositions);
+            gridAdded.addAll(gridPositions);
         }
     }
 
-    private List<Position> validNeighboursOf(Position grid) {
+    private List<Position> validNeighboursOf(Position grid, int distance) {
         List<Position> neighbours = new ArrayList<>();
-        if (grid.row() >= 2) {
-            neighbours.add(new Position(grid.row() - 2, grid.col()));
+        if (grid.row() >= distance) {
+            neighbours.add(grid.up(distance));
         }
-        if (grid.row() < rows - 2) {
-            neighbours.add(new Position(grid.row() + 2, grid.col()));
+        if (grid.row() < rows - distance) {
+            neighbours.add(grid.down(distance));
         }
-        if (grid.col() >= 2) {
-            neighbours.add(new Position(grid.row(), grid.col() - 2));
+        if (grid.col() >= distance) {
+            neighbours.add(grid.left(distance));
         }
-        if (grid.col() < cols - 2) {
-            neighbours.add(new Position(grid.row(), grid.col() + 2));
+        if (grid.col() < cols - distance) {
+            neighbours.add(grid.right(distance));
         }
         return neighbours;
     }
@@ -114,8 +131,39 @@ public class Maze implements Serializable {
         return new Position(row, col);
     }
 
+    public void solve() {
+        var current = findEntranceInCol(0); //left entrance to maze
+        var rightEntrance = findEntranceInCol(cols - 1);
+        elements[current.row()][current.col()] = TRAVERSE;
+        while (!current.equals(rightEntrance)) {
+            final var position =  current;
+            current = proceedOnPath(position).or(() -> backup(position)).orElseThrow();
+        }
+        elements[rightEntrance.row()][rightEntrance.col()] = TRAVERSE;
+        solved = true;
+    }
+
+    private Optional<Position> backup(Position pos) {
+        elements[pos.row()][pos.col()] = VISITED;
+        return validNeighboursOf(pos, 1).stream()
+                .filter(p -> atPosition(p) == TRAVERSE).findFirst();
+    }
+
+    private Optional<Position> proceedOnPath(Position pos) {
+        final var next = validNeighboursOf(pos, 1).stream().filter(p -> atPosition(p) == PATH).findFirst();
+        next.ifPresent(p -> elements[p.row()][p.col()] = TRAVERSE);
+        return next;
+    }
+
+    private Position findEntranceInCol(int col) {
+        var row = IntStream.range(0, rows).filter(r -> atPosition(r, col) == PATH).findFirst().orElseThrow();
+        return new Position(row, col);
+    }
+
     public enum Element {
         WALL,
-        PATH
+        PATH,
+        TRAVERSE,
+        VISITED
     }
 }
